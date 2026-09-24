@@ -28,3 +28,22 @@ class ConnectorContext(BaseModel):
     entity: str | None = None
 
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+class PaginationConfig(BaseModel):
+    """
+    Configuration for REST API pagination.
+    """
+
+    enabled: bool = False
+
+    type: str = "page"
+
+    page_param: str = "page"
+
+    page_size_param: str = "limit"
+
+    page_size: int = 100
+
+    start_page: int = 1
+
+    max_pages: int | None = None
