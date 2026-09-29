@@ -12,7 +12,7 @@ def test_get_dq_rule_set():
     assert rule_set.version == 1
     assert rule_set.status == "ACTIVE"
 
-    assert len(rule_set.rules) == 3
+    assert len(rule_set.rules) == 5
 
     rule_fields = {rule.field_name for rule in rule_set.rules}
 
