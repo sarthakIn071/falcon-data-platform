@@ -1,7 +1,8 @@
 import json
 
 from kafka import KafkaConsumer
-
+from kafka import TopicPartition
+from kafka.structs import OffsetAndMetadata
 from messaging.config import KafkaConfig
 
 class FalconKafkaConsumer:
@@ -11,7 +12,7 @@ class FalconKafkaConsumer:
             topic:str,
             group_id:str
     ):
-        self.consumer = KafkaConsumer(
+        self._consumer = KafkaConsumer(
             topic,
             bootstrap_servers=KafkaConfig.BOOTSTRAP_SERVERS,
             group_id=group_id,
@@ -20,12 +21,31 @@ class FalconKafkaConsumer:
             value_deserializer=lambda value:json.loads(value.decode("utf-8")),
         )
 
-    def consumer(self):
-        for message in self.consumer:
+    def poll(self, timeout_ms: int = 1000):
+        return self._consumer.poll(timeout_ms=timeout_ms)
+
+    def consume(self):
+        for message in self._consumer:
             yield message
 
+    def commit_batch(self, topic: str, partition: int, last_offset: int):
+        topic_partition = TopicPartition(topic, partition)
+
+        self._consumer.commit(
+            offsets={
+                topic_partition: OffsetAndMetadata(
+                    offset=last_offset + 1,
+                    metadata="",
+                    leader_epoch=-1,
+                )
+            }
+        )
+
+
     def commit(self):
-        self.consumer.commit()
+        self._consumer.commit()
 
     def close(self):
-        self.consumer.close()
+        self._consumer.close()
+
+
