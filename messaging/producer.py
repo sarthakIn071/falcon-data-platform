@@ -1,24 +1,41 @@
 import json
 
 from kafka import KafkaProducer
-
+from kafka.serializer import Serializer
 from messaging.config import KafkaConfig
 from messaging.event import FalconEvent
 
+
+
+
+class FalconValueSerializer(Serializer):
+    """Serialize Kafka message values to JSON bytes."""
+
+    def serialize(self, topic, headers, value):
+        if value is None:
+            return None
+
+        return json.dumps(value).encode("utf-8")
+
+
+class FalconKeySerializer(Serializer):
+    """Serialize Kafka message keys to UTF-8 bytes."""
+
+    def serialize(self, topic, headers, value):
+        if value is None:
+            return None
+
+        return value.encode("utf-8")
+
+
+        
 class FalconKafkaProducer:
 
     def __init__(self):
         self.producer = KafkaProducer(
             bootstrap_servers = KafkaConfig.BOOTSTRAP_SERVERS,
-            value_serializer=lambda value: json.dumps(
-                value
-            ).encode("utf-8"),
-
-            key_serializer = lambda value:(
-                value.encode("utf-8")
-                if value
-                else None
-            ),
+            value_serializer=FalconValueSerializer(),
+            key_serializer = FalconKeySerializer(),
         )
 
     def publish(

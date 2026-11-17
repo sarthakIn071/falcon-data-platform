@@ -1,3 +1,4 @@
+
 services:
 
   postgres:
@@ -35,6 +36,10 @@ services:
     ports:
       - "2181:2181"
 
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+
 
   kafka:
     image: confluentinc/cp-kafka:7.7.7
@@ -62,7 +67,24 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_LOG_RETENTION_HOURS: 168
 
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
 
 volumes:
 
   falcon_postgres_data:
+    external: true
+    name: falcon-data-platform_falcon_postgres_data
+
+  kafka_data:
+    external: true
+    name: f09702aee653eee145c19684b6e2e65afaa5faac5f951008a856171b4dc0ff50
+
+  zookeeper_data:
+    external: true
+    name: da7ea3d2bfccbe0836f01fac7a83b05b61f108a6b02167ee1f03ae9e344c41b5
+
+  zookeeper_logs:
+    external: true
+    name: 5fb1487410ce652c4e13241e90dae07edee0f981e31f10f5a54992957ed594de
