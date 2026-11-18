@@ -24,3 +24,5 @@ htmlcov/
 Thumbs.db
 # Database backups
 *.dump
+
+docker-compose.yml.pre-spark*.bak

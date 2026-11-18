@@ -70,6 +70,50 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: falcon-rustfs
+    restart: unless-stopped
+
+    command: ["/data"]
+
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+    volumes:
+      - rustfs_data:/data
+
+
+  spark:
+    profiles:
+      - spark
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    image: falcon-spark:4.1.4
+    container_name: falcon-spark
+    mem_limit: 1536m
+    entrypoint: ["/opt/spark/bin/spark-submit"]
+
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      RUSTFS_ENDPOINT: http://rustfs:9000
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
+
+    volumes:
+      - ./spark/apps:/opt/falcon/spark/apps
+      - falcon_spark_ivy_cache:/tmp/ivy-cache
+
+
 
 volumes:
 
@@ -88,3 +132,10 @@ volumes:
   zookeeper_logs:
     external: true
     name: 5fb1487410ce652c4e13241e90dae07edee0f981e31f10f5a54992957ed594de
+
+  rustfs_data:
+    name: falcon_rustfs_data
+
+  falcon_spark_ivy_cache:
+    external: true
+    name: falcon_spark_ivy_cache
