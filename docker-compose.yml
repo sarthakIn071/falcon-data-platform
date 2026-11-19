@@ -6,6 +6,15 @@ services:
     container_name: falcon-postgres
     restart: unless-stopped
 
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_wal_senders=10"
+      - "-c"
+      - "max_replication_slots=10"
+
     environment:
       POSTGRES_DB: falcon
       POSTGRES_USER: falcon
