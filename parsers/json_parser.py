@@ -2,7 +2,7 @@
 import json
 from itertools import chain
 from typing import Any, Iterator, IO
-
+from parsers.results import ParseResult
 import ijson
 from ijson.common import JSONError
 
@@ -115,6 +115,76 @@ class JSONParser(BaseParser):
             return
 
         yield from self._parse_json_document(stream, config)
+
+
+    def parse_stream_with_errors(
+        self,
+        stream: IO[bytes],
+        config: ParserConfig | None = None,
+    ) -> Iterator[ParseResult]:
+        """
+        Parse NDJSON incrementally without stopping on individual
+        record errors.
+
+        Each non-empty line produces one ParseResult.
+        Invalid lines are returned as errors so the caller
+        can quarantine them and continue processing.
+        """
+
+        if config is None:
+            config = ParserConfig(
+                format="JSON",
+                json_mode="LINES",
+            )
+
+        if config.format != self.format_name:
+            raise ParsingError(
+                f"Invalid parser configuration: expected JSON, got {config.format}",
+                format_name=self.format_name,
+            )
+
+        if config.json_mode != "LINES":
+            raise ParsingError(
+                "Error-tolerant streaming currently supports LINES mode only",
+                format_name=self.format_name,
+            )
+
+        if config.record_path:
+            raise ParsingError(
+                "record_path is not supported in LINES mode",
+                format_name=self.format_name,
+            )
+
+        for line_number, raw_line in enumerate(stream, start=1):
+
+            if not raw_line.strip():
+                continue
+
+            try:
+                line = raw_line.decode(config.encoding)
+                record = json.loads(line)
+
+                if not isinstance(record, dict):
+                    raise ValueError(
+                        "JSON line must contain an object"
+                    )
+
+                yield ParseResult(
+                    record=record,
+                    record_number=line_number,
+                    raw_data=raw_line,
+                )
+
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+
+                yield ParseResult(
+                    record=None,
+                    record_number=line_number,
+                    raw_data=raw_line,
+                    error=f"Invalid JSON on line {line_number}: {exc}",
+                )
+
+
 
     def _parse_json_lines(
         self,

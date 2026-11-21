@@ -1,8 +1,14 @@
+
 from typing import Any
 from uuid import uuid4
+
 from messaging.event import FalconEvent
 
-from validation.models import QuarantineRecord, ValidationResult
+from validation.models import (
+    QuarantineRecord,
+    ValidationResult,
+    ValidationError,
+)
 from validation.quarantine import QuarantineStore
 from validation.validator import SchemaValidator
 
@@ -53,6 +59,53 @@ class ValidationService:
         self.quarantine_store.quarantine_record(quarantine_record)
 
         return result
+
+    def quarantine_parse_error(
+        self,
+        raw_data: bytes,
+        record_number: int,
+        error: str,
+        run_id: str,
+        pipeline_id: int | None = None,
+        entity: str | None = None,
+        source_type: str | None = None,
+        source_name: str | None = None,
+        file_name: str | None = None,
+        file_path: str | None = None,
+        encoding: str = "utf-8",
+    ) -> str:
+        """
+        Quarantine a record that failed during parsing.
+        """
+
+        quarantine_record = QuarantineRecord(
+            quarantine_id=str(uuid4()),
+            quarantine_type="RECORD",
+            run_id=run_id,
+            pipeline_id=pipeline_id,
+            entity=entity,
+            source_type=source_type,
+            source_name=source_name,
+            file_name=file_name,
+            file_path=file_path,
+            record_number=record_number,
+            error_stage="PARSING",
+            raw_data=raw_data.decode(
+                encoding,
+                errors="replace",
+            ),
+            reason="Data parsing failed",
+            errors=[
+                ValidationError(
+                    code="PARSE_ERROR",
+                    message=error,
+                )
+            ],
+        )
+
+        return self.quarantine_store.quarantine_record(
+            quarantine_record
+        )
 
     def validate_event(self, event: FalconEvent) -> ValidationResult:
         """

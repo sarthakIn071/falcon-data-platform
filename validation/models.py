@@ -1,3 +1,4 @@
+
 from datetime import datetime, timezone
 from typing import Any
 
@@ -32,6 +33,11 @@ class QuarantineRecord(BaseModel):
 
     file_name: str | None = None
     file_path: str | None = None
+
+    # Parsing and validation error details
+    record_number: int | None = None
+    error_stage: str | None = None
+    raw_data: str | None = None
 
     reason: str
 
