@@ -59,10 +59,9 @@ class ValidationService:
         self.quarantine_store.quarantine_record(quarantine_record)
 
         return result
-
     def quarantine_parse_error(
         self,
-        raw_data: bytes,
+        raw_data: bytes | None,
         record_number: int,
         error: str,
         run_id: str,
@@ -90,9 +89,10 @@ class ValidationService:
             file_path=file_path,
             record_number=record_number,
             error_stage="PARSING",
-            raw_data=raw_data.decode(
-                encoding,
-                errors="replace",
+            raw_data=(
+                raw_data.decode(encoding, errors="replace")
+                if raw_data is not None
+                else None
             ),
             reason="Data parsing failed",
             errors=[
@@ -106,6 +106,7 @@ class ValidationService:
         return self.quarantine_store.quarantine_record(
             quarantine_record
         )
+
 
     def validate_event(self, event: FalconEvent) -> ValidationResult:
         """

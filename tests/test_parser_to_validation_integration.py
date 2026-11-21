@@ -70,11 +70,10 @@ def test_json_parser_to_validation_and_quarantine(tmp_path):
     # 5. Execute the complete parse-to-validation flow.
     stream = BytesIO(input_data)
 
-    parse_results = parser.parse_stream_with_errors(
-        stream,
-        config,
+    parse_results = parser.parse_stream(
+    stream,
+    config,
     )
-
     processing_results = list(
         processor.process(parse_results)
     )

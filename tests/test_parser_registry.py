@@ -3,6 +3,7 @@ import pytest
 
 from parsers.base import BaseParser
 from parsers.json_parser import JSONParser
+from parsers.avro_parser import AvroParser
 from parsers.registry import ParserRegistry
 
 
@@ -18,7 +19,7 @@ def test_format_lookup_is_case_insensitive():
 
 
 def test_list_registered_parsers():
-    assert ParserRegistry.list_parsers() == ["JSON"]
+    assert ParserRegistry.list_parsers() == ["AVRO","JSON"]
 
 
 def test_unknown_parser_raises_error():
@@ -37,3 +38,21 @@ def test_registered_parser_can_be_instantiated():
     parser = parser_class()
 
     assert isinstance(parser, JSONParser)
+
+# ------------------------- AVRO PARSERS --------------------------
+
+
+def test_avro_parser_is_registered():
+    assert ParserRegistry.get("AVRO") == AvroParser
+
+
+def test_avro_lookup_is_case_insensitive():
+    assert ParserRegistry.get("avro") == AvroParser
+    assert ParserRegistry.get("Avro") == AvroParser
+
+
+def test_registered_avro_parser_can_be_instantiated():
+    parser_class = ParserRegistry.get("AVRO")
+    parser = parser_class()
+
+    assert isinstance(parser, AvroParser)

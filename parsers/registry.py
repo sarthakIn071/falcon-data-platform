@@ -3,6 +3,7 @@ from typing import Type
 
 from parsers.base import BaseParser
 from parsers.json_parser import JSONParser
+from parsers.avro_parser import AvroParser
 
 
 class ParserRegistry:
@@ -61,4 +62,6 @@ class ParserRegistry:
 
 
 # Register built-in parsers
+# Register built-in parsers
 ParserRegistry.register("JSON", JSONParser)
+ParserRegistry.register("AVRO", AvroParser)

@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, IO
+from typing import Iterator, IO
 
 from parsers.models import ParserConfig
+from parsers.results import ParseResult
 
 
 class BaseParser(ABC):
@@ -16,9 +17,9 @@ class BaseParser(ABC):
         self,
         payload: bytes | str | dict | list,
         config: ParserConfig | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[ParseResult]:
         """
-        Parse a raw payload into a list of normalized records.
+        Parse an in-memory payload.
         """
         raise NotImplementedError
 
@@ -27,10 +28,8 @@ class BaseParser(ABC):
         self,
         stream: IO[bytes],
         config: ParserConfig | None = None,
-    ) -> Iterator[dict[str, Any]]:
+    ) -> Iterator[ParseResult]:
         """
-        Parse a binary stream incrementally.
-
-        Yields one normalized record at a time.
+        Parse a stream incrementally.
         """
         raise NotImplementedError

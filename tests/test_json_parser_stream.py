@@ -22,11 +22,15 @@ def test_stream_json_array(parser):
     ]
     """
 
-    records = list(parser.parse_stream(BytesIO(payload)))
+    results = list(parser.parse_stream(BytesIO(payload)))
 
-    assert len(records) == 3
-    assert records[0]["name"] == "John"
-    assert records[2]["name"] == "Peter"
+    assert len(results) == 3
+    assert all(result.success for result in results)
+
+    assert results[0].record["name"] == "John"
+    assert results[2].record["name"] == "Peter"
+
+    assert [result.record_number for result in results] == [1, 2, 3]
 
 
 def test_stream_nested_json_array(parser):
@@ -46,12 +50,11 @@ def test_stream_nested_json_array(parser):
         record_path="$.data.customers",
     )
 
-    records = list(
-        parser.parse_stream(BytesIO(payload), config)
-    )
+    results = list(parser.parse_stream(BytesIO(payload), config))
 
-    assert len(records) == 2
-    assert records[0]["name"] == "John"
+    assert len(results) == 2
+    assert results[0].record["name"] == "John"
+    assert all(result.success for result in results)
 
 
 def test_stream_ndjson(parser):
@@ -66,12 +69,11 @@ def test_stream_ndjson(parser):
         json_mode="LINES",
     )
 
-    records = list(
-        parser.parse_stream(BytesIO(payload), config)
-    )
+    results = list(parser.parse_stream(BytesIO(payload), config))
 
-    assert len(records) == 3
-    assert records[1]["name"] == "David"
+    assert len(results) == 3
+    assert results[1].record["name"] == "David"
+    assert all(result.success for result in results)
 
 
 def test_stream_ndjson_skips_blank_lines(parser):
@@ -86,21 +88,19 @@ def test_stream_ndjson_skips_blank_lines(parser):
         json_mode="LINES",
     )
 
-    records = list(
-        parser.parse_stream(BytesIO(payload), config)
-    )
+    results = list(parser.parse_stream(BytesIO(payload), config))
 
-    assert len(records) == 2
+    assert len(results) == 2
+    assert results[0].record["id"] == 1
+    assert results[1].record["id"] == 2
 
 
 def test_stream_empty_array(parser):
     payload = b"[]"
 
-    records = list(
-        parser.parse_stream(BytesIO(payload))
-    )
+    results = list(parser.parse_stream(BytesIO(payload)))
 
-    assert records == []
+    assert results == []
 
 
 def test_stream_invalid_json(parser):
@@ -133,6 +133,7 @@ def test_stream_invalid_ndjson(parser):
     payload = (
         b'{"id": 1}\n'
         b'invalid-json\n'
+        b'{"id": 3}\n'
     )
 
     config = ParserConfig(
@@ -140,8 +141,22 @@ def test_stream_invalid_ndjson(parser):
         json_mode="LINES",
     )
 
-    with pytest.raises(ParsingError, match="line 2"):
-        list(parser.parse_stream(BytesIO(payload), config))
+    results = list(parser.parse_stream(BytesIO(payload), config))
+
+    assert len(results) == 3
+
+    assert results[0].success is True
+    assert results[0].record == {"id": 1}
+    assert results[0].record_number == 1
+
+    assert results[1].success is False
+    assert results[1].record is None
+    assert results[1].record_number == 2
+    assert "line 2" in results[1].error
+
+    assert results[2].success is True
+    assert results[2].record == {"id": 3}
+    assert results[2].record_number == 3
 
 
 def test_stream_ndjson_rejects_record_path(parser):
@@ -160,8 +175,17 @@ def test_stream_ndjson_rejects_record_path(parser):
 def test_stream_yields_iterator(parser):
     payload = b'[{"id": 1}, {"id": 2}]'
 
-    records = parser.parse_stream(BytesIO(payload))
+    results = parser.parse_stream(BytesIO(payload))
 
-    assert iter(records) is records
-    assert next(records) == {"id": 1}
-    assert next(records) == {"id": 2}
+    assert iter(results) is results
+
+    first = next(results)
+    second = next(results)
+
+    assert first.success is True
+    assert first.record == {"id": 1}
+    assert first.record_number == 1
+
+    assert second.success is True
+    assert second.record == {"id": 2}
+    assert second.record_number == 2

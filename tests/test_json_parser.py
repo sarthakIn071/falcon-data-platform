@@ -1,6 +1,7 @@
 
-from parsers.json_parser import JSONParser
 import pytest
+
+from parsers.json_parser import JSONParser
 from parsers.exceptions import ParsingError
 from parsers.models import ParserConfig
 
@@ -15,13 +16,13 @@ def test_parse_json_object():
 
     result = parser.parse(payload)
 
-    assert result == [
-        {
-            "customer_id": 101,
-            "name": "John"
-        }
-    ]
-
+    assert len(result) == 1
+    assert result[0].record == {
+        "customer_id": 101,
+        "name": "John"
+    }
+    assert result[0].record_number == 1
+    assert result[0].success is True
 
 
 def test_parse_json_string():
@@ -31,12 +32,12 @@ def test_parse_json_string():
 
     result = parser.parse(payload)
 
-    assert result == [
-        {
-            "customer_id": 101,
-            "name": "John"
-        }
-    ]
+    assert len(result) == 1
+    assert result[0].record == {
+        "customer_id": 101,
+        "name": "John"
+    }
+    assert result[0].success is True
 
 
 def test_parse_json_array():
@@ -49,13 +50,18 @@ def test_parse_json_array():
 
     result = parser.parse(payload)
 
-    assert result == [
-        {"customer_id": 101, "name": "John"},
-        {"customer_id": 102, "name": "Smith"},
-    ]
-
     assert len(result) == 2
-
+    assert result[0].record == {
+        "customer_id": 101,
+        "name": "John"
+    }
+    assert result[1].record == {
+        "customer_id": 102,
+        "name": "Smith"
+    }
+    assert result[0].record_number == 1
+    assert result[1].record_number == 2
+    assert all(item.success for item in result)
 
 
 def test_parse_json_bytes():
@@ -65,12 +71,13 @@ def test_parse_json_bytes():
 
     result = parser.parse(payload)
 
-    assert result == [
-        {
-            "customer_id": 101,
-            "name": "John"
-        }
-    ]
+    assert len(result) == 1
+    assert result[0].record == {
+        "customer_id": 101,
+        "name": "John"
+    }
+    assert result[0].success is True
+
 
 def test_invalid_json_raises_parsing_error():
     parser = JSONParser()
@@ -136,10 +143,17 @@ def test_parse_nested_json():
 
     result = parser.parse(payload, config)
 
-    assert result == [
-        {"customer_id": 101, "name": "John"},
-        {"customer_id": 102, "name": "Smith"},
-    ]
+    assert len(result) == 2
+    assert result[0].record == {
+        "customer_id": 101,
+        "name": "John"
+    }
+    assert result[1].record == {
+        "customer_id": 102,
+        "name": "Smith"
+    }
+    assert all(item.success for item in result)
+
 
 def test_nested_json_path_not_found():
     parser = JSONParser()
@@ -237,6 +251,9 @@ def test_parse_json_with_custom_encoding():
 
     result = parser.parse(payload, config)
 
-    assert result == [
-        {"customer_id": 101, "name": "José"}
-    ]
+    assert len(result) == 1
+    assert result[0].record == {
+        "customer_id": 101,
+        "name": "José"
+    }
+    assert result[0].success is True
